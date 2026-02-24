@@ -28,7 +28,6 @@ def step_enter_feature_summary(context):
     generator_page.enter_end_date(five_days_later_str)
     generator_page.enter_feature_summary(summary)
     generator_page.enter_feature_requirements(requirements)
-    breakpoint()
 
 
 @when("I generate a test plan")
