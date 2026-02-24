@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Test Planner</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+
+    <!-- Markdown Renderer -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html-to-docx@1.4.5/dist/html-to-docx.umd.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+
+    <!-- Local CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}">
+</head>
+
+<body>
+
+    <header class="app-header">
+        <h1>AI Test Assistant</h1>
+    </header>
+
+    <main class="app-layout">
+        <section class="left-panel">
+            <form id="mainForm" class="panel form-panel">
+                <h2>Generator</h2>
+
+                <label for="start_date">Start Date *</label>
+                <input id="start_date" type="date" name="start_date" required>
+
+                <label for="end_date">End Date *</label>
+                <input id="end_date" type="date" name="end_date" required>
+
+                <div class="field-header">
+                    <label for="feature_summary">Feature Summary *</label>
+                    <button type="button" class="expand-btn" onclick="toggleExpand('feature_summary')"
+                        title="Expand View">⛶</button>
+                </div>
+                <textarea id="feature_summary" name="feature_summary" rows="3" required></textarea>
+
+                <div class="field-header">
+                    <label for="requirements">Feature Requirements *</label>
+                    <button type="button" class="expand-btn" onclick="toggleExpand('requirements')"
+                        title="Expand View">⛶</button>
+                </div>
+                <textarea id="requirements" name="requirements" rows="8" required></textarea>
+
+                <div class="form-actions">
+                    <button id="generatePlanBtn" type="button" disabled class="btn primary">Generate Test Plan</button>
+                    <button id="toggleTestCaseBtn" type="button" onclick="toggleTestCases(this)"
+                        class="btn secondary">Show Test Case Generator</button>
+                </div>
+            </form>
+
+            <div id="testCaseOptions" class="panel testcase-panel" style="display:none;">
+                <h3>Test Case Format</h3>
+
+                <select id="formatType" onchange="handleFormatChange()">
+                    <option value="steps">Test Steps Format</option>
+                    <option value="gherkin">BDD (Gherkin)</option>
+                    <option value="json">JSON Format</option>
+                </select>
+
+                <div id="jsonSchemaContainer" style="display:none; margin-top:15px;">
+                    <label for="jsonSchema">Optional: Provide Sample JSON Format (from your test tool)</label>
+                    <textarea id="jsonSchema" rows="8" placeholder='{
+  "testCaseName": "",
+  "description": "",
+  "steps": [],
+  "expectedResult": "",
+  "priority": ""
+}' oninput="validateJSON()"></textarea>
+                    <div id="jsonError" class="field-error"></div>
+                </div>
+
+                <div class="panel-actions">
+                    <button type="button" onclick="generateCases()" class="btn primary">Generate Tests</button>
+                </div>
+            </div>
+        </section>
+
+        <aside class="right-panel">
+            <div id="outputPanel" class="panel output-panel" aria-live="polite">
+                <div id="downloadButtonsContainer" style="display:none;" class="download-buttons">
+                    <button class="copy-btn btn ghost" onclick="downloadAsWord()">Download as Word</button>
+                    <button class="copy-btn btn ghost" onclick="downloadAsExcel()">Download as Excel</button>
+                    <button class="copy-btn btn ghost" onclick="downloadAsPDF()">Download as PDF</button>
+                    <button class="copy-btn btn ghost" onclick="copyOutput(this)">Copy</button>
+                    <button class="btn ghost clear-btn" onclick="clearOutput()">Clear</button>
+                </div>
+                <div id="outputContainer">
+                    <!-- Dedicated spinner area: shown while AI is thinking -->
+                    <div id="spinner" class="spinner-wrap" style="display:none;">
+                        <div class="brick-loader" role="status">
+                            <div class="brick b1"></div>
+                            <div class="brick b2"></div>
+                            <div class="brick b3"></div>
+                        </div>
+                        <div id="spinnerMessage" class="thinking-text"></div>
+                    </div>
+
+                    <!-- AI rendered output goes here -->
+                    <div id="output" class="ai-output" aria-live="polite">
+                        <div class="welcome-screen">
+                            <div class="welcome-icon">✨</div>
+                            <h3>Ready to generate?</h3>
+                            <p>Fill in the details on the left to get started. Here is how it works:</p>
+                            <ul class="steps-box shadow-sm">
+                                <li><strong>1. Scope:</strong> Define your test period and feature name.</li>
+                                <li><strong>2. Input:</strong> Provide requirements or user stories.</li>
+                                <li><strong>3. Build:</strong> Click Generate to see the magic happen.</li>
+                            </ul>
+                            <div class="welcome-hint">Your professional test documentation will appear right here.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </main>
+
+    <div id="textareaOverlay" class="textarea-overlay" onclick="closeExpanded()"></div>
+    <div class="close-expand-hint">Press <strong>Esc</strong> or click outside to close</div>
+    <!-- Local JavaScript -->
+    <script src="{{ url_for('static', path='js/app.js') }}"></script>
+
+</body>
+
+</html>
