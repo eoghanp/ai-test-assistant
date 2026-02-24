@@ -11,3 +11,4 @@ uv.lock
 .DS_Store
 pyproject.toml
 .python-version
+none
