@@ -12,3 +12,5 @@ uv.lock
 pyproject.toml
 .python-version
 none
+test_data/test_recordings
+reports/

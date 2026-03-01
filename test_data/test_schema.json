@@ -1,0 +1,20 @@
+{
+  "test_id": "TC-001",
+  "test_name": "Login Functionality",
+  "test_steps": [
+    {
+      "description": "Enter valid username",
+      "expected_behaviour": "Username is accepted and input field shows valid state"
+    },
+    {
+      "description": "Enter valid password",
+      "expected_behaviour": "Password is accepted and input field shows valid state"
+    },
+    {
+      "description": "Click login button",
+      "expected_behaviour": "User is successfully logged into the system"
+    }
+  ],
+  "priority": "High",
+  "date_created": "2026-02-26"
+}
