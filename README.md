@@ -1,15 +1,28 @@
 # AI Test Assistant
 
-An AI-powered test planning and test case generation tool using FastAPI and Google's Gemini API.
+An AI-powered test planning and test case generation tool using FastAPI and multiple AI models (Google Gemini, OpenAI, Anthropic Claude, and DeepSeek).
 
 ## Features
 
-- **Test Plan Generation**: Automatically generate comprehensive test plans with scope, strategies, and timelines
+- **Multi-Model Support**: Generate tests using your preferred AI model:
+  - Google Gemini (`gemini-2.5-flash`)
+  - OpenAI (`gpt-4.1` / `gpt-4o`)
+  - Anthropic Claude (`claude-haiku-4-5-20251001` / `claude-opus-4-6`)
+  - DeepSeek (`DeepSeek-V3`)
+- **Test Plan Generation**: Automatically generate comprehensive test plans with scope, strategies, and timelines.
 - **Test Case Generation**: Create test cases in multiple formats:
   - BDD (Gherkin) format
   - JSON format with custom schemas
   - Test Steps format
-- **Smart UI**: Interactive web interface with markdown rendering and code highlighting
+- **Smart UI**: Interactive web interface with markdown rendering and code highlighting.
+
+## Application Previews
+
+### Test Plan Generator
+![Test Plan Generation](assets/testPlan.png)
+
+### Test Case Generator
+![Test Case Generation](assets/testCases.png)
 
 ## Project Structure
 
@@ -17,12 +30,13 @@ An AI-powered test planning and test case generation tool using FastAPI and Goog
 ai-assistant/
 ├── app/                          # Main application package
 │   ├── main.py                   # FastAPI application entry point
-│   ├── clients/                  # AI client implementations
+│   ├── clients/                  # AI client implementations (Google, OpenAI, Anthropic, DeepSeek)
 │   ├── static/                   # Static files (CSS, JS)
 │   ├── templates/                # HTML templates
 │   ├── config.py                 # Configuration settings
 │   ├── ai_client.py              # AI API client and generation logic
 │   └── prompts.py                # Prompt templates for AI
+├── assets/                       # Documentation
 ├── tests/                        # Test suite
 │   └── e2e/                      # Playwright end-to-end tests
 ├── pyproject.toml                # Project configuration
@@ -31,12 +45,12 @@ ai-assistant/
 └── uv.lock                       # Dependency lock file
 ```
 
-## Setup
+## Setup & API Keys Configuration
 
 ### Prerequisites
 
 - Python 3.13+
-- Google Gemini API key
+- API keys for your preferred AI models (Google, OpenAI, Anthropic, or DeepSeek)
 
 ### Installation
 
@@ -51,12 +65,45 @@ cd ai-assistant
 cp .env.example .env
 ```
 
-3. Add your Google API key to `.env`:
-```
-GOOGLE_API_KEY=your_actual_api_key_here
+3. **Plug and Play API Keys**: Open the `.env` file and add your actual API keys for the models you intend to use. You only need to provide keys for the providers you actually want to use.
+
+```env
+# Google Gemini API Key
+GOOGLE_API_KEY=
+
+# Anthropic API Key
+ANTHROPIC_API_KEY=
+
+# DeepSeek API Key
+DEEPSEEK_API_KEY=
+
+# OpenAI API Key
+OPENAI_API_KEY=
+
+MODEL_NAME=gemini-2.5-flash
+OPENAI_MODEL_NAME=gpt-4.1
+ANTHROPIC_MODEL_NAME=claude-haiku-4-5-20251001
+DEEPSEEK_MODEL_NAME=DeepSeek-V3
+
+AI_PROVIDER=
+AI_MAX_TOKENS=4000
+
+# Application Environment
+DEBUG=False
+
+# Server Configuration
+HOST=0.0.0.0
+PORT=8000
+APP_URL=http://localhost:8000
 ```
 
-4. Install dependencies using `uv`:
+4. **Select the Default AI Provider**: In the `.env` file, set the `AI_PROVIDER` to the model you want to use by default (`google`, `openai`, `anthropic`, or `deepseek`).
+
+```env
+AI_PROVIDER=anthropic
+```
+
+5. Install dependencies using `uv`:
 ```bash
 uv sync
 ```
@@ -86,7 +133,7 @@ The application will be available at `http://localhost:8000`
 
 - **FastAPI**: Modern web framework for building APIs
 - **Uvicorn**: ASGI server for running FastAPI
-- **Google Genai**: Official Google AI SDK
+- **Google Genai**, **OpenAI**, **Anthropic**: Official AI SDKs
 - **Jinja2**: Template engine for HTML rendering
 - **Python-multipart**: For handling form data
 
@@ -94,18 +141,7 @@ See `pyproject.toml` for the complete list of dependencies.
 
 ## Configuration
 
-Edit `app/config.py` to customize:
-- Model selection (default: gemini-2.5-flash)
-- API endpoint configuration
+Edit `app/config.py` or `.env` to customize:
+- Model selection (e.g., `gemini-2.5-flash`, `gpt-4.1`, `claude-haiku-4-5-20251001`, `DeepSeek-V3`)
+- API provider and endpoint configuration
 - Application directories
-
-## Environment Variables
-
-- `GOOGLE_API_KEY`: Your Google Gemini API key (required)
-- `DEBUG`: Enable debug mode (default: False)
-- `HOST`: Server host address (default: 0.0.0.0)
-- `PORT`: Server port (default: 8000)
-
-## Contributing
-
-Feel free to submit issues and enhancement requests!
