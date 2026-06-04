@@ -586,3 +586,18 @@ textarea {
         border-color: rgba(255, 255, 255, 0.25);
     }
 }
+
+.model-attribution {
+    position: sticky;
+    top: -6px;
+    float: right;
+    font-size: 11px;
+    color: #64748b;
+    background: #f8fafc;
+    border: 1px solid rgba(11, 17, 32, 0.1);
+    padding: 4px 8px;
+    border-radius: 6px;
+    z-index: 10;
+    margin-bottom: 8px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}

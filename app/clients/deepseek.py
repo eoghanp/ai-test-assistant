@@ -31,5 +31,13 @@ class DeepSeekAIClient(AIClient):
                 max_tokens=self.max_tokens,
             )
             return resp.choices[0].message.content
+        except openai.APIError as exc:
+            raise AIClientError(
+                message=exc.message or str(exc),
+                code=exc.status_code,
+                transient=(exc.status_code is not None and (exc.status_code >= 500 or exc.status_code == 429)),
+                details=exc.body
+            )
         except Exception as exc:
-            raise AIClientError(exc, code=None, transient=True, details=str(exc))
+            raise AIClientError(str(exc), code=None, transient=True, details=str(exc))
+

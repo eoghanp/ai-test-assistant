@@ -4,6 +4,14 @@ let downloadButtonsContainer = null;
 // Guard to prevent concurrent AI calls
 let __ai_in_progress = false;
 
+function getSelectedModelName() {
+  const select = document.getElementById("ai_provider");
+  if (select && select.options && select.selectedIndex >= 0) {
+    return select.options[select.selectedIndex].text;
+  }
+  return "AI";
+}
+
 function setInProgress(val) {
   __ai_in_progress = !!val;
   console.debug('[ai] setInProgress ->', __ai_in_progress);
@@ -89,7 +97,7 @@ async function generatePlan() {
   outputContainer = outputContainer || document.getElementById("outputContainer");
   downloadButtonsContainer = downloadButtonsContainer || document.getElementById('downloadButtonsContainer');
 
-  showSpinner("Generating Test Plan...");
+  showSpinner(`Generating Test Plan using ${getSelectedModelName()}...`);
 
   const formData = new FormData(document.getElementById("mainForm"));
   const ac = makeAbortController(60000);
@@ -99,13 +107,22 @@ async function generatePlan() {
 
     if (!response.ok) {
       let bodyText = '';
+      let errorTitle = 'Error generating response:';
       try {
         const ct = response.headers.get('content-type') || '';
         if (ct.includes('application/json')) {
           const json = await response.json();
           bodyText = JSON.stringify(json, null, 2);
+          if (json.message) {
+            errorTitle = `API Error (${response.status}): ${json.message}`;
+          } else if (json.error) {
+            errorTitle = `API Error (${response.status}): ${json.error}`;
+          }
         } else {
           bodyText = await response.text();
+          if (bodyText.length < 150) {
+            errorTitle = bodyText;
+          }
         }
       } catch (e) {
         bodyText = `Unable to parse response body: ${e.message}`;
@@ -117,7 +134,7 @@ async function generatePlan() {
       if (outputDiv) {
         outputDiv.innerHTML = `
             <div class="error-card">
-              <h3>Error generating response:</h3>
+              <h3>${escapeHtml(errorTitle)}</h3>
               <p>Please review the response returned by the model. This typically indicates a problem such as quota limits, rate limiting, or an internal model error. Check billing and usage, then try again.</p>
               <details style="margin-top:12px;"><summary style="cursor:pointer">Model response (click to expand)</summary>
                 <pre style="white-space:pre-wrap; margin-top:8px;">${escapeHtml(bodyText)}</pre>
@@ -133,7 +150,7 @@ async function generatePlan() {
 
     const result = await response.text();
     // render and stop spinner
-    renderMarkdown(result);
+    renderMarkdown(result, getSelectedModelName());
   } catch (err) {
     console.error('generatePlan error', err);
     hideSpinner();
@@ -162,7 +179,7 @@ async function generateCases() {
     if (!isValid) { alert("Please fix the JSON format before generating test cases."); setInProgress(false); return; }
   }
 
-  showSpinner("Generating Test Cases...");
+  showSpinner(`Generating Test Cases using ${getSelectedModelName()}...`);
 
   const form = document.getElementById("mainForm");
   const formData = new FormData();
@@ -170,6 +187,9 @@ async function generateCases() {
   formData.append("requirements", form.requirements.value);
   formData.append("format_type", format);
   formData.append("json_schema", document.getElementById("jsonSchema")?.value || "");
+  if (form.ai_provider) {
+    formData.append("ai_provider", form.ai_provider.value);
+  }
 
   const ac = makeAbortController(60000);
   try {
@@ -178,13 +198,22 @@ async function generateCases() {
     // If non-200, capture the body and display a professional error message (like generatePlan)
     if (!response.ok) {
       let bodyText = '';
+      let errorTitle = 'Error generating response:';
       try {
         const ct = response.headers.get('content-type') || '';
         if (ct.includes('application/json')) {
           const json = await response.json();
           bodyText = JSON.stringify(json, null, 2);
+          if (json.message) {
+            errorTitle = `API Error (${response.status}): ${json.message}`;
+          } else if (json.error) {
+            errorTitle = `API Error (${response.status}): ${json.error}`;
+          }
         } else {
           bodyText = await response.text();
+          if (bodyText.length < 150) {
+            errorTitle = bodyText;
+          }
         }
       } catch (e) {
         bodyText = `Unable to parse response body: ${e.message}`;
@@ -195,7 +224,7 @@ async function generateCases() {
       if (outputDiv) {
         outputDiv.innerHTML = `
             <div class="error-card">
-              <h3>Error generating response:</h3>
+              <h3>${escapeHtml(errorTitle)}</h3>
               <p>Please review the response returned by the model. This typically indicates a problem such as quota limits, rate limiting, or an internal model error. Check billing and usage, then try again.</p>
               <details style="margin-top:12px;"><summary style="cursor:pointer">Model response (click to expand)</summary>
                 <pre style="white-space:pre-wrap; margin-top:8px;">${escapeHtml(bodyText)}</pre>
@@ -210,7 +239,7 @@ async function generateCases() {
     }
 
     const result = await response.text();
-    renderMarkdown(result);
+    renderMarkdown(result, getSelectedModelName());
   } catch (err) {
     console.error('generateCases error', err);
     hideSpinner();
@@ -225,7 +254,7 @@ async function generateCases() {
   }
 }
 
-function renderMarkdown(text) {
+function renderMarkdown(text, modelName) {
   outputContainer = outputContainer || document.getElementById("outputContainer");
   outputDiv = outputDiv || document.getElementById("output");
 
@@ -234,7 +263,12 @@ function renderMarkdown(text) {
 
   const html = marked.parse(text || '');
 
-  if (outputDiv) outputDiv.innerHTML = html;
+  let finalHtml = html;
+  if (modelName) {
+    finalHtml = `<div class="model-attribution">Generated with ${modelName}</div>` + finalHtml;
+  }
+
+  if (outputDiv) outputDiv.innerHTML = finalHtml;
 
   document.querySelectorAll('#output pre code, #output code').forEach((block) => {
     try { hljs.highlightElement(block); } catch (e) { /* ignore */ }
@@ -243,6 +277,9 @@ function renderMarkdown(text) {
   // Save to locale storage for persistence
   if (text) {
     localStorage.setItem('ai_output_persistence', text);
+    if (modelName) {
+      localStorage.setItem('ai_output_model', modelName);
+    }
   }
 
   // Show download buttons after content is rendered
@@ -534,6 +571,7 @@ function downloadAsPDF() {
       const endInput = form.querySelector('input[name="end_date"]');
       const featureSummary = form.querySelector('textarea[name="feature_summary"]');
       const requirements = form.querySelector('textarea[name="requirements"]');
+      const aiProvider = form.querySelector('select[name="ai_provider"]');
 
       const requiredFields = form ? Array.from(form.querySelectorAll('[required]')) : [];
       const touchedFields = new Set();
@@ -620,10 +658,11 @@ function downloadAsPDF() {
 
       function saveFormToStorage() {
         const data = {
-          start_date: startInput.value,
-          end_date: endInput.value,
-          feature_summary: featureSummary.value,
-          requirements: requirements.value
+          start_date: startInput ? startInput.value : '',
+          end_date: endInput ? endInput.value : '',
+          feature_summary: featureSummary ? featureSummary.value : '',
+          requirements: requirements ? requirements.value : '',
+          ai_provider: aiProvider ? aiProvider.value : 'google'
         };
         localStorage.setItem('ai_planner_form_data', JSON.stringify(data));
       }
@@ -633,15 +672,17 @@ function downloadAsPDF() {
         if (!saved) return;
         try {
           const data = JSON.parse(saved);
-          if (data.start_date) startInput.value = data.start_date;
-          if (data.end_date) endInput.value = data.end_date;
-          if (data.feature_summary) featureSummary.value = data.feature_summary;
-          if (data.requirements) requirements.value = data.requirements;
+          if (data.start_date && startInput) startInput.value = data.start_date;
+          if (data.end_date && endInput) endInput.value = data.end_date;
+          if (data.feature_summary && featureSummary) featureSummary.value = data.feature_summary;
+          if (data.requirements && requirements) requirements.value = data.requirements;
+          if (data.ai_provider && aiProvider) aiProvider.value = data.ai_provider;
 
-          if (data.start_date) touchedFields.add(startInput);
-          if (data.end_date) touchedFields.add(endInput);
-          if (data.feature_summary) touchedFields.add(featureSummary);
-          if (data.requirements) touchedFields.add(requirements);
+          if (data.start_date && startInput) touchedFields.add(startInput);
+          if (data.end_date && endInput) touchedFields.add(endInput);
+          if (data.feature_summary && featureSummary) touchedFields.add(featureSummary);
+          if (data.requirements && requirements) touchedFields.add(requirements);
+          if (data.ai_provider && aiProvider) touchedFields.add(aiProvider);
         } catch (e) {
           console.warn('Failed to load form data', e);
         }
@@ -738,7 +779,7 @@ function downloadAsPDF() {
       if (generateBtn) generateBtn.disabled = true;
       attachMutualDateListeners();
 
-      const watchFields = [startInput, endInput, featureSummary, requirements].filter(Boolean);
+      const watchFields = [startInput, endInput, featureSummary, requirements, aiProvider].filter(Boolean);
       watchFields.forEach(el => {
         el.addEventListener('input', () => {
           touchedFields.add(el);
@@ -786,9 +827,10 @@ function downloadAsPDF() {
       validateForm();
 
       const persistedOutput = localStorage.getItem('ai_output_persistence');
+      const persistedModel = localStorage.getItem('ai_output_model');
       if (persistedOutput) {
         console.debug('Restoring persisted AI output');
-        renderMarkdown(persistedOutput);
+        renderMarkdown(persistedOutput, persistedModel || "AI");
       }
 
       console.debug('app.js init complete');

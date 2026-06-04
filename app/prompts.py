@@ -2,7 +2,7 @@
 def get_test_plan_prompt(start_date: str, end_date: str, feature_summary: str, requirements: str) -> str:
     """Generate a prompt for creating a comprehensive test plan."""
     return f"""
-You are a Senior QA Lead.
+You are a Senior Quality Assurence Test Engineer.
 
 Create a comprehensive test plan.
 
@@ -21,7 +21,6 @@ Include:
 - Out of Scope
 - Risks
 - Functional Strategy
-- E2E Strategy
 - Automation Strategy
 - Security Testing
 - Performance Testing
