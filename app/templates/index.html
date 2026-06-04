@@ -36,6 +36,14 @@
             <form id="mainForm" class="panel form-panel">
                 <h2>Generator</h2>
 
+                <label for="ai_provider">AI Model Provider</label>
+                <select id="ai_provider" name="ai_provider">
+                    <option value="google">Google Gemini</option>
+                    <option value="openai">OpenAI GPT</option>
+                    <option value="anthropic">Anthropic Claude</option>
+                    <option value="deepseek">DeepSeek AI</option>
+                </select><br>
+
                 <label for="start_date">Start Date *</label>
                 <input id="start_date" type="date" name="start_date" required>
 
@@ -85,7 +93,8 @@
                 </div>
 
                 <div class="panel-actions">
-                    <button id="generateTests" type="button" onclick="generateCases()" class="btn primary">Generate Tests</button>
+                    <button id="generateTests" type="button" onclick="generateCases()" class="btn primary">Generate
+                        Tests</button>
                 </div>
             </div>
         </section>

@@ -3,7 +3,7 @@ Main Application Entry Point
 """
 
 from fastapi import FastAPI, Request, Form
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
@@ -11,6 +11,7 @@ import asyncio
 import logging
 
 from app.ai_client import generate_test_plan, generate_test_cases
+from app.clients.base import AIClientError
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -40,13 +41,27 @@ async def generate_plan_endpoint(
     end_date: str = Form(...),
     feature_summary: str = Form(...),
     requirements: str = Form(...),
+    ai_provider: str = Form(None),
 ):
     """Handle test plan generation requests."""
-    logger.info("Received generate-plan request: start=%s end=%s", start_date, end_date)
+    logger.info("Received generate-plan request: start=%s end=%s provider=%s", start_date, end_date, ai_provider)
     try:
         # run the blocking AI call in a thread
-        result = await asyncio.to_thread(generate_test_plan, start_date, end_date, feature_summary, requirements)
+        result = await asyncio.to_thread(generate_test_plan, start_date, end_date, feature_summary, requirements, provider=ai_provider)
         return HTMLResponse(content=result)
+    except AIClientError as e:
+        logger.exception("AI Client error generating test plan")
+        if e.code is not None:
+            return JSONResponse(
+                status_code=e.code,
+                content={
+                    "error": "AI Client Error",
+                    "message": e.message,
+                    "status_code": e.code,
+                    "details": e.details
+                }
+            )
+        return HTMLResponse(content=f"Error generating test plan: {e.message}", status_code=500)
     except Exception as e:
         logger.exception("Error generating test plan")
         return HTMLResponse(content=f"Error generating test plan: {e}", status_code=500)
@@ -58,13 +73,27 @@ async def generate_cases_endpoint(
     requirements: str = Form(...),
     format_type: str = Form(...),
     json_schema: str = Form(None),
+    ai_provider: str = Form(None),
 ):
     """Handle test case generation requests."""
-    logger.info("Received generate-cases request: format=%s", format_type)
+    logger.info("Received generate-cases request: format=%s provider=%s", format_type, ai_provider)
     try:
         # run the blocking AI call in a thread
-        result = await asyncio.to_thread(generate_test_cases, feature_summary, requirements, format_type, json_schema)
+        result = await asyncio.to_thread(generate_test_cases, feature_summary, requirements, format_type, json_schema, provider=ai_provider)
         return HTMLResponse(content=result)
+    except AIClientError as e:
+        logger.exception("AI Client error generating test cases")
+        if e.code is not None:
+            return JSONResponse(
+                status_code=e.code,
+                content={
+                    "error": "AI Client Error",
+                    "message": e.message,
+                    "status_code": e.code,
+                    "details": e.details
+                }
+            )
+        return HTMLResponse(content=f"Error generating test cases: {e.message}", status_code=500)
     except Exception as e:
         logger.exception("Error generating test cases")
         return HTMLResponse(content=f"Error generating test cases: {e}", status_code=500)

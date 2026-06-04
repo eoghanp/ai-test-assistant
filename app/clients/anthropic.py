@@ -23,6 +23,16 @@ class AnthropicAIClient(AIClient):
                 messages=[{"role": "user", "content": prompt}]
             )
             return resp.content[0].text
+        except anthropic.APIError as exc:
+            status_code = getattr(exc, "status_code", None)
+            body = getattr(exc, "body", None)
+            raise AIClientError(
+                message=getattr(exc, "message", None) or str(exc),
+                code=status_code,
+                transient=(status_code is not None and (status_code >= 500 or status_code == 429)),
+                details=body
+            )
         except Exception as exc:
-            raise AIClientError(exc, code=None, transient=True, details=str(exc))
+            raise AIClientError(str(exc), code=None, transient=True, details=str(exc))
+
 

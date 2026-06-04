@@ -6,16 +6,15 @@ from app.config import get_ai_config
 from app.clients.base import AIClientError
 
 
-# Create a module-level client
-_client = None
+# Cache for clients
+_clients = {}
 
-
-def _get_client():
-    global _client
-    if _client is None:
-        config = get_ai_config()
-        _client = get_client(config.get("AI_PROVIDER"), config)
-    return _client
+def _get_client(provider: str = None):
+    config = get_ai_config()
+    provider_to_use = provider or config.get("AI_PROVIDER")
+    if provider_to_use not in _clients:
+        _clients[provider_to_use] = get_client(provider_to_use, config)
+    return _clients[provider_to_use]
 
 
 def _with_retries(func, *args, **kwargs):
@@ -42,11 +41,12 @@ def generate_test_plan(
     end_date: str,
     feature_summary: str,
     requirements: str,
+    provider: str = None,
 ) -> str:
     """
     Generate a comprehensive test plan using the AI model.
     """
-    client = _get_client()
+    client = _get_client(provider)
     return _with_retries(client.generate_test_plan, start_date, end_date, feature_summary, requirements)
 
 
@@ -55,9 +55,10 @@ def generate_test_cases(
     requirements: str,
     format_type: str,
     json_schema: str | None = None,
+    provider: str = None,
 ) -> str:
     """
     Generate test cases in the specified format using the AI model.
     """
-    client = _get_client()
+    client = _get_client(provider)
     return _with_retries(client.generate_test_cases, feature_summary, requirements, format_type, json_schema)
